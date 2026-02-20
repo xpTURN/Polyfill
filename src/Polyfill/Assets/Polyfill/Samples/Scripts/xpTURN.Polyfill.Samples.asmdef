@@ -1,0 +1,16 @@
+{
+    "name": "xpTURN.Polyfill.Samples",
+    "rootNamespace": "",
+    "references": [
+        "GUID:e54187357b07148a9ad4cf24f45837a7"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,30 @@
+{
+  "name": "com.xpturn.polyfill",
+  "version": "0.1.0",
+  "displayName": "xpTURN.Polyfill",
+  "description": "Runtime polyfill for C# 9·10·11 syntax (record, init, required, interpolated strings, etc.) in Unity. Provides BCL types and Editor support for -langversion and .csproj LangVersion auto-configuration.",
+  "unity": "2022.3",
+  "unityRelease": "12f1",
+  "documentationUrl": "https://github.com/xpTURN/Polyfill/blob/main/README.md",
+  "changelogUrl": "https://github.com/xpTURN/Polyfill/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/xpTURN/Polyfill/blob/main/LICENSE.md",
+  "dependencies": {
+  },
+  "testables": ["com.xpturn.polyfill"],
+  "keywords": [
+    "xpTURN",
+    "Polyfill"
+  ],
+  "samples": [
+      {
+          "displayName": "Samples",
+          "description": "Contains sample code and assets for the Polyfill library.",
+          "path": "Samples~/"
+      }
+  ],
+  "author": {
+    "name": "xpTURN",
+    "email": "xpturn@gmail.com",
+    "url": "https://github.com/xpTURN"
+  }
+}
