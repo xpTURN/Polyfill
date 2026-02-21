@@ -1,4 +1,4 @@
-#if POLYFILL_ZLOGGER_INTEGRATION
+#if POLYFILL_ZLOGGER_INTEGRATION && CSHARP_PREVIEW
 using UnityEngine;
 
 using Microsoft.Extensions.Logging;

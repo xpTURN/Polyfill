@@ -1,5 +1,5 @@
 ### xpTURN.Polyfill
-#### Copyright (c) 2025 DongHun Jung.
+#### Copyright (c) 2026 JDH.
 
 The source code of the xpTURN.Polyfill project is distributed under the Apache License, Version 2.0.
 Please refer to the following link for the full license text:

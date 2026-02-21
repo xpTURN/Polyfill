@@ -1,3 +1,4 @@
+#if CSHARP_PREVIEW
 using UnityEngine;
 
 // Unity does not find MonoBehaviour scripts with file-scoped namespace (namespace X;). Use block namespace.
@@ -11,3 +12,4 @@ namespace xpTURN.Polyfill.Samples
         }
     }
 }
+#endif

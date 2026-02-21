@@ -1,3 +1,4 @@
+#if CSHARP_PREVIEW
 using System;
 using System.Text;
 using System.Runtime.CompilerServices;
@@ -19,3 +20,4 @@ public ref struct XHandler
     public void AppendFormatted(object value, int alignment = 0, string format = null) => _sb.Append(value != null ? value.ToString() : "");
     public void AppendFormatted<T>(T value, string format) => _sb.Append(value is IFormattable f ? f.ToString(format, null) : (value?.ToString() ?? ""));
 }
+#endif

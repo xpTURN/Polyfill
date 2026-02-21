@@ -9,7 +9,9 @@ The .NET Standard 2.1 BCL used by Unity does not include the types required for 
 | C# version | Feature | Types |
 |------------|----------|--------|
 | C# 9  | `init`-only setter | [IsExternalInit](./src/Polyfill/Assets/Polyfill/Runtime/Init/IsExternalInit.cs) |
+| C# 9  | Skip locals init | [SkipLocalsInitAttribute](./src/Polyfill/Assets/Polyfill/Runtime/SkipLocalsInit/SkipLocalsInitAttribute.cs) |
 | C# 10 | Custom interpolated string handler | [InterpolatedStringHandlerAttribute](./src/Polyfill/Assets/Polyfill/Runtime/InterpolatedString/InterpolatedStringHandlerAttribute.cs), [InterpolatedStringHandlerArgumentAttribute](./src/Polyfill/Assets/Polyfill/Runtime/InterpolatedString/InterpolatedStringHandlerArgumentAttribute.cs) |
+| C# 10 | Caller expression argument | [CallerArgumentExpressionAttribute](./src/Polyfill/Assets/Polyfill/Runtime/Caller/CallerArgumentExpressionAttribute.cs) |
 | C# 11 | `required` member | [RequiredMemberAttribute](./src/Polyfill/Assets/Polyfill/Runtime/Required/RequiredMemberAttribute.cs) |
 | C# 11 | Constructor satisfying `required` | [SetsRequiredMembersAttribute](./src/Polyfill/Assets/Polyfill/Runtime/Required/SetsRequiredMembersAttribute.cs) |
 | C# 11 | Compiler feature requirement | [CompilerFeatureRequiredAttribute](./src/Polyfill/Assets/Polyfill/Runtime/Required/CompilerFeatureRequiredAttribute.cs) |
@@ -32,24 +34,40 @@ https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill
 
 ### Project settings (C# langversion)
 
-When using advanced syntax such as `init`, `required`, or interpolated string handlers, you may need **Additional Compiler Arguments** and **.csproj LangVersion** applied.  
-The **Editor** module of this package lets you apply or remove these settings via menu items and .csproj post-processing.
+For C# 9–11 syntax you may need **Additional Compiler Arguments** and **.csproj LangVersion**. The package **Editor** provides menu items and .csproj post-processing to apply or remove them.
+
+To enable:
 
 1. Run **Edit > Polyfill > Player Settings > Apply Additional Compiler Arguments -langversion (All Installed Platforms)**.
 2. Settings are stored in **ProjectSettings** / **xpTURN.Polyfill.Settings.json**.
 
-When applied:
+When applied (Auto):
 
 - **Project Settings (Player > Additional Compiler Arguments)**  
   `-langversion:preview` is added for installed platforms (used by Unity build).
 - **.csproj**  
   When Unity regenerates .csproj files, `<LangVersion>preview</LangVersion>` is **automatically** inserted so IDEs (Cursor, Visual Studio, OmniSharp, etc.) use it for C# 11 syntax support.
+- **Scripting Define Symbols (Player > Other Settings)**  
+  `CSHARP_PREVIEW` is added so you can use `#if CSHARP_PREVIEW` for C# 9+ code.
 
-- Note: For Unity 2022.3.12f1 or later, creating a `csc.rsp` file is unnecessary.
+- Note: For Unity 2022.3.12f1 or later, creating a [csc.rsp](./docs/csc.rsp) file is unnecessary.
 
 To disable:
 
 - Run **Edit > Polyfill > Player Settings > Remove Additional Compiler Arguments -langversion (All Installed Platforms)**.
+
+### Assembly Definition usage
+
+If your project uses **Assembly Definition** (.asmdef), add a reference to this package’s runtime assembly in any asmdef that uses the polyfill types (`init`, `record`, `required`, interpolated string handlers, etc.).
+
+1. Select your **Assembly Definition** (.asmdef) file and open it in the Inspector.
+2. Under **References**, click **+** and add **xpTURN.Polyfill.Runtime**.
+
+Without this reference, scripts in that assembly will not see types such as `IsExternalInit` or `RequiredMemberAttribute` and may fail to compile.
+
+Result after adding the package reference:
+
+<img src="./docs/assets/Assembly-Definition-References.png" alt="Assembly Definition References" width="420">
 
 ## Usage examples
 
@@ -76,6 +94,21 @@ var p = new Point(1, 2);
 var q = p with { Y = 3 };  // Point(1, 3)
 ```
 
+### SkipLocalsInit (C# 9)
+
+Applied to a method (or type/module) so the compiler does not zero-initialize locals. **Usable only in `unsafe` code.** Especially effective with `stackalloc`: large stack buffers are not zero-filled, saving that cost in hot paths. Use only when every local is definitely assigned before use.
+
+```csharp
+using System.Runtime.CompilerServices;
+
+[SkipLocalsInit]
+static unsafe void FillBuffer()
+{
+    Span<byte> buffer = stackalloc byte[256];
+    // ... fill buffer; without SkipLocalsInit the 256 bytes would be zeroed first
+}
+```
+
 ### required member (C# 11)
 
 ```csharp
@@ -91,6 +124,22 @@ public class Config
         Port = port;
     }
 }
+```
+
+### CallerArgumentExpression (C# 10)
+
+The compiler passes the **source text** of the argument for the specified parameter. Useful for assertions or diagnostics.
+
+```csharp
+using System.Runtime.CompilerServices;
+
+static void Assert(bool condition, [CallerArgumentExpression(nameof(condition))] string? expression = null)
+{
+    if (!condition)
+        throw new System.ArgumentException($"Condition failed: {expression}");
+}
+
+Assert(x > 0);  // On failure: "Condition failed: x > 0"
 ```
 
 ### Custom interpolated string (C# 10)

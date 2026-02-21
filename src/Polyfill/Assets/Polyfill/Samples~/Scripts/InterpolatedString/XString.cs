@@ -1,3 +1,4 @@
+#if CSHARP_PREVIEW
 using System.Runtime.CompilerServices;
 
 using xpTURN.Polyfill.Samples.InterpolatedStringHandler;
@@ -15,3 +16,4 @@ public static class XString
         return handler.GetString();
     }
 }
+#endif

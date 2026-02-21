@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
+using Unity.CodeEditor;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
@@ -15,10 +16,10 @@ namespace xpTURN.Polyfill.Editor
     /// </summary>
     public static class PlayerSettingsAdditionalCompilerArguments
     {
-        private const string SettingsFileName = "xpTURN.Polyfill.Settings.json";
-
-        private const string LangVersionPrefix = "-langversion:";
-        private static readonly string DesiredLangVersion = "-langversion:preview";
+        public const string SettingsFileName = "xpTURN.Polyfill.Settings.json";
+        public const string LangVersionPrefix = "-langversion:";
+        public const string DesiredLangVersion = "-langversion:preview";
+        public const string ScriptingDefineSymbolForLatestCSharp = "CSHARP_PREVIEW";
 
         [Serializable]
         private class Settings
@@ -111,6 +112,8 @@ namespace xpTURN.Polyfill.Editor
                     Debug.LogWarning($"[Polyfill] Skip {target.TargetName}: {ex.Message}");
                 }
             }
+
+            RegenerateProjectFiles();
         }
 
         /// <summary>
@@ -131,6 +134,31 @@ namespace xpTURN.Polyfill.Editor
                     Debug.LogWarning($"[Polyfill] Skip {target.TargetName}: {ex.Message}");
                 }
             }
+
+            RegenerateProjectFiles();
+        }
+
+        /// <summary>
+        /// Regenerates .sln and .csproj files (same as Assets &gt; Open C# Project). Call after changing compiler args or define symbols so IDEs pick up changes.
+        /// </summary>
+        [MenuItem("Edit/Polyfill/Regenerate Project Files")]
+        public static void RegenerateProjectFiles()
+        {
+            try
+            {
+                var editor = CodeEditor.Editor;
+                if (editor?.CurrentCodeEditor == null)
+                {
+                    Debug.LogWarning("[Polyfill] Regenerate Project Files: no external code editor registered.");
+                    return;
+                }
+                editor.CurrentCodeEditor.SyncAll();
+                Debug.Log("[Polyfill] Project files (.sln / .csproj) regenerated.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
 
         /// <summary>
@@ -142,14 +170,19 @@ namespace xpTURN.Polyfill.Editor
             var result = new List<string>();
             foreach (var arg in existing)
             {
-                if (string.IsNullOrEmpty(arg.Trim())) continue;
+                if (string.IsNullOrEmpty(arg?.Trim())) continue;
 
-                var content = arg.Replace(DesiredLangVersion, string.Empty).Trim();
+                // Strip any -langversion:* (e.g. -langversion:preview, -langversion:12)
+                var content = Regex.Replace(arg, @"(?i)-langversion:\S*", string.Empty).Trim();
                 if (!string.IsNullOrEmpty(content))
                     result.Add(content);
             }
             PlayerSettings.SetAdditionalCompilerArguments(buildTarget, result.ToArray());
-            Debug.Log($"[Polyfill] -langversion removed for {buildTarget.TargetName}");
+
+            // Remove Scripting Define Symbol 'CSHARP_PREVIEW'
+            RemoveScriptingDefineSymbol(buildTarget, ScriptingDefineSymbolForLatestCSharp);
+
+            Debug.Log($"[Polyfill] -langversion and Scripting Define Symbol removed for {buildTarget.TargetName}");
         }
 
         /// <summary>
@@ -194,43 +227,89 @@ namespace xpTURN.Polyfill.Editor
         }
 
         /// <summary>
+        /// Adds the given define symbol to Scripting Define Symbols for the build target if not already present.
+        /// </summary>
+        private static void AddScriptingDefineSymbol(NamedBuildTarget buildTarget, string symbol)
+        {
+            var current = PlayerSettings.GetScriptingDefineSymbols(buildTarget);
+
+            var list = new List<string>();
+            foreach (var s in current.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var trimmed = s.Trim();
+                if (!string.IsNullOrEmpty(trimmed))
+                    list.Add(trimmed);
+            }
+
+            if (list.Contains(symbol))
+                return;
+
+            list.Add(symbol);
+            PlayerSettings.SetScriptingDefineSymbols(buildTarget, list.ToArray());
+        }
+
+        /// <summary>
+        /// Removes the given define symbol from Scripting Define Symbols for the build target.
+        /// </summary>
+        private static void RemoveScriptingDefineSymbol(NamedBuildTarget buildTarget, string symbol)
+        {
+            var current = PlayerSettings.GetScriptingDefineSymbols(buildTarget);
+
+            var list = new List<string>();
+            foreach (var s in current.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var trimmed = s.Trim();
+                if (string.IsNullOrEmpty(trimmed) || string.Equals(trimmed, symbol, StringComparison.Ordinal))
+                    continue;
+
+                list.Add(trimmed);
+            }
+
+            PlayerSettings.SetScriptingDefineSymbols(buildTarget, list.ToArray());
+        }
+
+        /// <summary>
         /// -langversion: replaces existing value if present, otherwise adds it. Other arguments are merged.
         /// Skips if already set to DesiredLangVersion (preview).
         /// </summary>
         public static void ApplyArgumentsForTarget(NamedBuildTarget buildTarget)
         {
+            // Add '-langversion:preview' arguments
             var existing = PlayerSettings.GetAdditionalCompilerArguments(buildTarget);
-            if (IsAlreadyDesiredLangVersion(existing))
-                return;
-
-            var result = new List<string>();
-            var langVersionReplaced = false;
-
-            foreach (var arg in existing)
+            if (!IsAlreadyDesiredLangVersion(existing))
             {
-                if (IsLangVersionArgument(arg))
+                var result = new List<string>();
+                var langVersionReplaced = false;
+
+                foreach (var arg in existing)
                 {
-                    if (!langVersionReplaced)
+                    if (IsLangVersionArgument(arg))
                     {
-                        // Detect -langversion:9, -langversion:9.0, -langversion:11 etc. and replace with desired value
-                        var pattern = @"(?i)-langversion:\S*";
-                        var content = Regex.Replace(arg, pattern, DesiredLangVersion);
-                        result.Add(content.Trim());
-                        langVersionReplaced = true;
+                        if (!langVersionReplaced)
+                        {
+                            // Detect -langversion:9 etc. and replace with desired value
+                            var pattern = @"(?i)-langversion:\S*";
+                            var content = Regex.Replace(arg, pattern, DesiredLangVersion);
+                            result.Add(content.Trim());
+                            langVersionReplaced = true;
+                        }
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrEmpty(arg.Trim()))
+                            result.Add(arg);
                     }
                 }
-                else
-                {
-                    if (!string.IsNullOrEmpty(arg.Trim()))
-                        result.Add(arg);
-                }
+
+                if (!langVersionReplaced)
+                    result.Add(DesiredLangVersion);
+
+                PlayerSettings.SetAdditionalCompilerArguments(buildTarget, result.ToArray());
             }
 
-            if (!langVersionReplaced)
-                result.Add(DesiredLangVersion);
-
-            PlayerSettings.SetAdditionalCompilerArguments(buildTarget, result.ToArray());
-            Debug.Log($"[Polyfill] Additional Compiler Arguments applied for {buildTarget.TargetName}: -langversion -> {DesiredLangVersion}");
+            // Add Scripting Define Symbol 'CSHARP_PREVIEW'
+            AddScriptingDefineSymbol(buildTarget, ScriptingDefineSymbolForLatestCSharp);
+            Debug.Log($"[Polyfill] Additional Compiler Arguments applied for {buildTarget.TargetName}: -langversion -> {DesiredLangVersion}, Scripting Define Symbol added: {ScriptingDefineSymbolForLatestCSharp}");
         }
 
         /// <summary>

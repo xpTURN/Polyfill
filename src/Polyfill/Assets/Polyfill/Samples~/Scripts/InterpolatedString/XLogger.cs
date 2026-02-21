@@ -1,3 +1,4 @@
+#if CSHARP_PREVIEW
 using System.Runtime.CompilerServices;
 
 using UnityEngine;
@@ -48,3 +49,4 @@ public sealed class XLogger
         Debug.LogAssertion(handler.GetString());
     }
 }
+#endif
