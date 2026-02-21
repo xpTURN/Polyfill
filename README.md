@@ -1,4 +1,4 @@
-# xpTURN.Polyfill.Runtime
+# xpTURN.Polyfill
 
 Runtime polyfill package for using C# 9·10·11 syntax (`record`, `init`, `required`, custom interpolated strings, etc.) in Unity as-is.
 
