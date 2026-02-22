@@ -18,6 +18,12 @@
     "defineConstraints": [
         "UNITY_INCLUDE_TESTS"
     ],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.nuget.mono-cecil",
+            "expression": "",
+            "define": "POLYFILL_MONO_CECIL_INTEGRATION"
+        }
+    ],
     "noEngineReferences": false
 }
