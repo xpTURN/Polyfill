@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR && POLYFILL_MONO_CECIL_INTEGRATION
 using Mono.Cecil;
 #endif
 using NUnit.Framework;
@@ -68,7 +68,7 @@ namespace xpTURN.Polyfill.Tests
             Assert.That(typeof(SkipLocalsInitAttribute).Namespace, Is.EqualTo("System.Runtime.CompilerServices"));
         }
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR && POLYFILL_MONO_CECIL_INTEGRATION
         /// <summary>
         /// Reads current assembly IL via Mono.Cecil and verifies that methods with [SkipLocalsInit] have no .locals init.
         /// </summary>
