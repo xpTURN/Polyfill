@@ -223,7 +223,7 @@ XLogger.Log(ref handler);
   Normal `$"…"` can allocate intermediate strings multiple times via `string.Format`/concatenation, and arguments passed as `params object[]` can **box** value types.  
   A custom handler is invoked generically as `AppendFormatted<T>(T value)`, so value types are passed without boxing; it appends literals and values in sequence (typically as a `ref struct`) and builds the final string only once at `Debug.Log(handler.GetString())`, keeping allocations and GC pressure low.
 
-- The sample above is a minimal C# 10 custom interpolated string handler. For production, consider [ZLogger](https://github.com/Cysharp/ZLogger) or [ZString](https://github.com/Cysharp/ZString) on GitHub.
+- The sample above is a minimal C# 10 custom interpolated string handler. For production, consider [ZLogger](https://github.com/Cysharp/ZLogger) or [ZString](https://github.com/Cysharp/ZString) on GitHub. (+ [xpTURN.XString](https://github.com/xpTURN/XString))
 
 ### MonoBehaviour and namespace in Unity
 

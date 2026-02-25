@@ -2,10 +2,6 @@
 
 ## [0.3.0] - 2026-02-24
 
---
-
-## [0.2.2] - 2026-02-24
-
 ### Added
 
 - **DynamicallyAccessedMembersAttribute, DynamicallyAccessedMemberTypes** polyfill for C# 9 / .NET 5
