@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1] - 2026-03-09
+
+### Added
+
+- **ModuleInitializerAttribute** polyfill for C# 9 / .NET 5
+
 ## [0.3.0] - 2026-02-24
 
 ### Added
