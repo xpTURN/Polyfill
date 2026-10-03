@@ -4,9 +4,10 @@ using System.Runtime.CompilerServices;
 namespace System.Text
 {
     /// <summary>
-    /// Polyfill for StringBuilder interpolated string handler (C# 10 / .NET 6).
-    /// Enables efficient <c>StringBuilder.Append($"{...}")</c> when the runtime does not provide it.
-    /// Use via extension method: <c>sb.AppendInterpolated($"{x}")</c> or ensure extension is in scope for overload resolution.
+    /// Interpolated string handler that appends to a <see cref="StringBuilder"/>.
+    /// Used by <c>sb.AppendInterpolated($"…")</c> and <c>sb.Append(provider, $"…")</c>.
+    /// Integral and floating-point types, <c>decimal</c>, <c>bool</c>, <c>char</c>, <c>DateTime</c>, <c>DateTimeOffset</c>, <c>TimeSpan</c> and <c>Guid</c>
+    /// are formatted into a stack buffer, and enum values with no format or <c>G</c> are written from a cached name table.
     /// </summary>
     [InterpolatedStringHandler]
     public ref struct AppendInterpolatedStringHandler
@@ -53,25 +54,12 @@ namespace System.Text
 
         public void AppendFormatted<T>(T value)
         {
-            AppendFormatted(value, format: null);
+            AppendFormatted(value, 0, format: null);
         }
 
         public void AppendFormatted<T>(T value, string format)
         {
-            if (_hasCustomFormatter)
-            {
-                AppendCustomFormatter(value, format);
-                return;
-            }
-
-            if (value is IFormattable formattable)
-            {
-                _stringBuilder.Append(formattable.ToString(format, _provider));
-                return;
-            }
-
-            if (value != null)
-                _stringBuilder.Append(value.ToString());
+            AppendFormatted(value, 0, format);
         }
 
         public void AppendFormatted<T>(T value, int alignment) =>
@@ -79,30 +67,97 @@ namespace System.Text
 
         public void AppendFormatted<T>(T value, int alignment, string format)
         {
+            if (!_hasCustomFormatter)
+            {
+                var formatter = SpanFormatterCache<T>.Instance;
+                if (formatter != null)
+                {
+                    Span<char> buffer = stackalloc char[SpanFormatters.BufferLength];
+                    if (formatter(value, buffer, out int written, format, _provider))
+                    {
+                        AppendPadded(_stringBuilder, buffer.Slice(0, written), alignment);
+                        return;
+                    }
+                    Span<char> large = stackalloc char[SpanFormatters.LargeBufferLength];
+                    if (formatter(value, large, out written, format, _provider))
+                    {
+                        AppendPadded(_stringBuilder, large.Slice(0, written), alignment);
+                        return;
+                    }
+                }
+                else if (string.IsNullOrEmpty(format) || format == "G" || format == "g")
+                {
+                    string name = EnumNames<T>.Find(value);
+                    if (name != null)
+                    {
+                        AppendPadded(_stringBuilder, name, alignment);
+                        return;
+                    }
+                }
+            }
+
             if (alignment == 0)
             {
-                AppendFormatted(value, format);
+                if (_hasCustomFormatter)
+                {
+                    AppendCustomFormatter(value, format);
+                    return;
+                }
+                if (value is IFormattable formattable)
+                {
+                    _stringBuilder.Append(formattable.ToString(format, _provider));
+                    return;
+                }
+                if (value != null)
+                    _stringBuilder.Append(value.ToString());
                 return;
             }
 
             string s = FormatValue(value, format);
+            AppendPadded(_stringBuilder, s, alignment);
+        }
+
+        private static void AppendPadded(StringBuilder sb, ReadOnlySpan<char> s, int alignment)
+        {
             int width = alignment < 0 ? -alignment : alignment;
-            int paddingRequired = width - (s != null ? s.Length : 0);
+            int paddingRequired = width - s.Length;
             if (paddingRequired <= 0)
             {
-                _stringBuilder.Append(s);
+                sb.Append(s);
                 return;
             }
 
             if (alignment < 0) // left-align: value then spaces
             {
-                _stringBuilder.Append(s);
-                _stringBuilder.Append(' ', paddingRequired);
+                sb.Append(s);
+                sb.Append(' ', paddingRequired);
             }
             else // right-align: spaces then value
             {
-                _stringBuilder.Append(' ', paddingRequired);
-                _stringBuilder.Append(s);
+                sb.Append(' ', paddingRequired);
+                sb.Append(s);
+            }
+        }
+
+        private static void AppendPadded(StringBuilder sb, string s, int alignment)
+        {
+            int width = alignment < 0 ? -alignment : alignment;
+            int paddingRequired = width - (s != null ? s.Length : 0);
+            if (paddingRequired <= 0)
+            {
+                sb.Append(s);
+                return;
+            }
+
+            if (alignment < 0) // left-align: value then spaces
+            {
+                sb.Append(s);
+                sb.Append(' ', paddingRequired);
+            }
+            else // right-align: spaces then value
+            {
+                sb.Append(' ', paddingRequired);
+                sb.Append(s);
             }
         }
 
@@ -139,31 +194,7 @@ namespace System.Text
 
         public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string format = null)
         {
-            if (alignment == 0)
-            {
-                _stringBuilder.Append(value);
-                return;
-            }
-
-            bool leftAlign = alignment < 0;
-            if (leftAlign) alignment = -alignment;
-            int paddingRequired = alignment - value.Length;
-            if (paddingRequired <= 0)
-            {
-                _stringBuilder.Append(value);
-                return;
-            }
-
-            if (leftAlign)
-            {
-                _stringBuilder.Append(value);
-                _stringBuilder.Append(' ', paddingRequired);
-            }
-            else
-            {
-                _stringBuilder.Append(' ', paddingRequired);
-                _stringBuilder.Append(value);
-            }
+            AppendPadded(_stringBuilder, value, alignment);
         }
 
         #endregion

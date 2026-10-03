@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "com.xpturn.polyfill": "file:../../../src/Polyfill/Assets/Polyfill",
+    "com.unity.ide.rider": "3.0.36",
+    "com.unity.ide.visualstudio": "2.0.22"
+  }
+}

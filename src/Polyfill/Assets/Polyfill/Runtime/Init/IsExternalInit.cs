@@ -1,3 +1,4 @@
+#if !NET5_0_OR_GREATER
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
@@ -5,3 +6,4 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     public static class IsExternalInit { }
 }
+#endif

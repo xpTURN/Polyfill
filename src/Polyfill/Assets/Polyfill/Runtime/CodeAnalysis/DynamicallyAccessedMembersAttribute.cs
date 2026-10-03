@@ -1,3 +1,4 @@
+#if !NET5_0_OR_GREATER
 namespace System.Diagnostics.CodeAnalysis
 {
     /// <summary>
@@ -22,3 +23,4 @@ namespace System.Diagnostics.CodeAnalysis
         }
     }
 }
+#endif

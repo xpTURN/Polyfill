@@ -1,0 +1,7 @@
+{
+  "name": "com.xpturn.polyfill.tests",
+  "version": "0.1.0",
+  "displayName": "xpTURN.Polyfill Tests",
+  "description": "Tests of xpTURN.Polyfill. The Unity projects tests/PolyfillTests.2022.3, tests/PolyfillTests.6000.3 and tests/PolyfillTests.6000.6 reference it by path and list it in testables. Not published.",
+  "unity": "2022.3"
+}

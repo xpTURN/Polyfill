@@ -1,0 +1,9 @@
+{
+    "name": "Case.C1_Polyfill",
+    "references": ["xpTURN.Polyfill.Runtime"],
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "allowUnsafeCode": true,
+    "noEngineReferences": true
+}

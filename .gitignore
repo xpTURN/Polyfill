@@ -13,3 +13,7 @@
 # Project specific Files
 **/*.csproj
 **/*.sln
+**/*.slnx
+
+# Implementation plans (kept in the private repository)
+**/docs/IMP/*

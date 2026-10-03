@@ -1,0 +1,6 @@
+{
+    "name": "Compat.Smoke",
+    "references": ["xpTURN.Polyfill.Runtime"],
+    "autoReferenced": false,
+    "allowUnsafeCode": true
+}

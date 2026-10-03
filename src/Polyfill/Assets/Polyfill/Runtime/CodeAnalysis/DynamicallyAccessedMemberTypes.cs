@@ -1,3 +1,4 @@
+#if !NET5_0_OR_GREATER
 namespace System.Diagnostics.CodeAnalysis
 {
     /// <summary>
@@ -53,3 +54,4 @@ namespace System.Diagnostics.CodeAnalysis
         AllNestedTypes = 2228608,
     }
 }
+#endif
