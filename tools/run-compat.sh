@@ -19,7 +19,7 @@
 # Usage:
 #   tools/run-compat.sh [options] [<unity-version>...]
 #
-#   Without a version, runs 2022.3.62f3, 6000.3.9f1 and 6000.6.0f1 in turn.
+#   Without a version, runs 2022.3.62f3, 6000.3.27f2 and 6000.6.7f1 in turn.
 #
 # Options:
 #   --smoke          also build Mono and IL2CPP players (StandaloneOSX, arm64) and run the smoke
@@ -88,7 +88,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 if [[ ${#VERSIONS[@]} -eq 0 ]]; then
-  VERSIONS=(2022.3.62f3 6000.3.9f1 6000.6.0f1)
+  VERSIONS=(2022.3.62f3 6000.3.27f2 6000.6.7f1)
 fi
 
 # ── Colors (only when writing to a tty) ──────────────────────────────────────

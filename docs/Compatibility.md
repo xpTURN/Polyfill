@@ -20,7 +20,7 @@ The probe is one source file with a line per type-dependent feature, compiled as
 The package tests run in the editor on the PlayMode platform, once with each API compatibility level, and once in an IL2CPP player. The smoke runs in a Mono and an IL2CPP player for macOS: records and `with`, `required`, a custom handler, `AppendInterpolated`, `[CallerArgumentExpression]`, `[SkipLocalsInit]`, a module initializer, the nullable attributes, attributes read through reflection, and the syntax that needs no type. From 6000.5 it adds `file` types, `[UnscopedRef]`, collection expressions with `[CollectionBuilder]`, primary constructors and `[Experimental]` ([Smoke.cs](../tests/Compat/Assets/Smoke/Smoke.cs)).
 
 <!-- compat:matrix -->
-| Check | 2022.3.62f3 | 6000.3.9f1 | 6000.6.0f1 |
+| Check | 2022.3.62f3 | 6000.3.27f2 | 6000.6.7f1 |
 |---|---|---|---|
 | Probe: type-dependent features | 11 / 11 | 11 / 11 | 12 / 12 |
 | Package tests: editor, .NET Standard 2.1 | 111 / 111 | 111 / 111 | 124 / 124 |
@@ -28,7 +28,7 @@ The package tests run in the editor on the PlayMode platform, once with each API
 | Package tests: IL2CPP player | 111 / 111 | 111 / 111 | 124 / 124 |
 | Smoke: Mono player | 12 / 12 | 12 / 12 | 18 / 18 |
 | Smoke: IL2CPP player | 12 / 12 | 12 / 12 | 18 / 18 |
-| Measured | 2026-10-03 | 2026-10-03 | 2026-10-03 |
+| Measured | 2026-10-03 | 2026-10-31 | 2026-10-31 |
 <!-- /compat:matrix -->
 
 ## Other polyfill libraries
@@ -46,7 +46,7 @@ The package tests run in the editor on the PlayMode platform, once with each API
 Each cell counts the probe features that compile with that option. The probe is compiled by the editor's own compiler with the response file Unity generated for the probe asmdef, with the package reference replaced by the option's DLL, generator or source files. The libraries are downloaded when the script runs and are not imported as assets. An option whose assembly fails outside the probe, for example on a generator's own output, counts 0, and the cell names the first error codes. The last two rows reference this package together with another provider.
 
 <!-- compat:alternatives -->
-| Option | 2022.3.62f3 | 6000.3.9f1 | 6000.6.0f1 |
+| Option | 2022.3.62f3 | 6000.3.27f2 | 6000.6.7f1 |
 |---|---|---|---|
 | No polyfill | 0 / 11, CS0246, CS0518 | 0 / 11, CS0246, CS0518 | 0 / 12, CS0246, CS0518 |
 | xpTURN.Polyfill (this repository) | 11 / 11 | 11 / 11 | 12 / 12 |
@@ -61,7 +61,7 @@ Each cell counts the probe features that compile with that option. The probe is 
 | IsExternalInit (Corundum) 1.0.0 | 3 / 11, CS0246, CS0656 | 3 / 11, CS0246, CS0656 | 3 / 12, CS0246, CS0656 |
 | xpTURN.Polyfill + IsExternalInit DLL | 8 / 11, CS0518 | 8 / 11, CS0518 | 9 / 12, CS0518 |
 | xpTURN.Polyfill + PolySharp 1.16.0, both settings | 11 / 11 | 11 / 11 | 12 / 12 |
-| Measured | 2026-10-03 | 2026-10-03 | 2026-10-03 |
+| Measured | 2026-10-03 | 2026-10-31 | 2026-10-31 |
 <!-- /compat:alternatives -->
 
 - **Runtime-supported attributes**: by default PolySharp leaves out the attributes that .NET 5 and later define, `[DynamicallyAccessedMembers]` among them. Unity's profile has no public copy, so that line fails (CS0246 on Roslyn 4.3, CS0122 on Roslyn 4.10).

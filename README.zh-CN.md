@@ -81,7 +81,7 @@ Klotho 的源生成器会为组件、数据资源，以及在其他程序集中�
 | 支持类型 | 项目专用 asmdef 中手工复制的 4 个文件 | 包引用 |
 | 设置 | 每个新 asmdef 都要重复 | 1 个包，1 次菜单命令 |
 
-我们有九个 Unity 项目在 Unity 2022.3.62f3、6000.3.9f1 和 6000.6.0f1 上引用这个包。
+我们有九个 Unity 项目在 Unity 2022.3.62f3、6000.3.27f2 和 6000.6.7f1 上引用这个包。
 
 ### 什么时候不需要它
 
@@ -100,7 +100,7 @@ Klotho 的源生成器会为组件、数据资源，以及在其他程序集中�
 | 方案 | 形式 | 设置语言版本 | 能编译的功能 |
 |------|------|--------------|--------------|
 | 不用 polyfill | 不适用 | 不适用 | 无 |
-| **xpTURN.Polyfill 0.4.0** | UPM，一个共享程序集，public 类型 | 是：构建、包、IDE | 全部 |
+| **xpTURN.Polyfill 0.4.1** | UPM，一个共享程序集，public 类型 | 是：构建、包、IDE | 全部 |
 | [PolySharp](https://github.com/Sergio0694/PolySharp) 1.15.0、1.16.0 | NuGet 源生成器，每个程序集一份 internal 类型 | 否 | 除 `[DynamicallyAccessedMembers]` 外全部 |
 | 启用 `PolySharpIncludeRuntimeSupportedAttributes` 的 PolySharp 1.16.0 | 同上 | 否 | 无（CS8336）；用 `.globalconfig` 同时关闭嵌入特性后为全部 |
 | [PolyfillLib](https://github.com/SimonCropp/Polyfill) 11.4.1 | 附带 2 个依赖 DLL 的 NuGet DLL，public 类型 | 否 | 全部 |
@@ -171,7 +171,7 @@ sb.AppendInterpolated(CultureInfo.InvariantCulture, $"{x:F3},{y:F3}");
 ## 要求
 
 - Unity 2022.3.12f1 或更高版本
-- 已在 Unity 2022.3.62f3、6000.3.9f1 和 6000.6.0f1 上用 [tools/run-compat.sh](./tools/run-compat.sh) 验证。结果：[docs/Compatibility.md](./docs/Compatibility.md#version-matrix)
+- 已在 Unity 2022.3.62f3、6000.3.27f2 和 6000.6.7f1 上用 [tools/run-compat.sh](./tools/run-compat.sh) 验证。结果：[docs/Compatibility.md](./docs/Compatibility.md#version-matrix)
 
 ## 安装
 
@@ -186,7 +186,7 @@ https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill
 如果要固定在某个发布版本，加上它的标签：
 
 ```text
-https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.0
+https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.1
 ```
 
 ### 项目设置 (C# 语言版本)

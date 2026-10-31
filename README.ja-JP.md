@@ -81,7 +81,7 @@ Klotho のソースジェネレーターは、コンポーネント、データ�
 | サポート型 | プロジェクト専用 asmdef に手でコピーしたファイル 4 個 | パッケージ参照 |
 | セットアップ | 新しい asmdef ごとに繰り返し | パッケージ 1 個、メニューコマンド 1 回 |
 
-私たちの Unity プロジェクト 9 個が、Unity 2022.3.62f3、6000.3.9f1、6000.6.0f1 でこのパッケージを参照しています。
+私たちの Unity プロジェクト 9 個が、Unity 2022.3.62f3、6000.3.27f2、6000.6.7f1 でこのパッケージを参照しています。
 
 ### 不要な場合
 
@@ -100,7 +100,7 @@ Klotho のソースジェネレーターは、コンポーネント、データ�
 | 選択肢 | 形態 | 言語バージョンの設定 | コンパイルできる機能 |
 |--------|------|----------------------|----------------------|
 | ポリフィルなし | 該当なし | 該当なし | なし |
-| **xpTURN.Polyfill 0.4.0** | UPM、共有アセンブリ一つ、public 型 | あり: ビルド、パッケージ、IDE | すべて |
+| **xpTURN.Polyfill 0.4.1** | UPM、共有アセンブリ一つ、public 型 | あり: ビルド、パッケージ、IDE | すべて |
 | [PolySharp](https://github.com/Sergio0694/PolySharp) 1.15.0、1.16.0 | NuGet ソースジェネレーター、アセンブリごとの internal 型 | なし | `[DynamicallyAccessedMembers]` 以外すべて |
 | `PolySharpIncludeRuntimeSupportedAttributes` を有効にした PolySharp 1.16.0 | 同上 | なし | なし（CS8336）。`.globalconfig` で埋め込み属性も無効にするとすべて |
 | [PolyfillLib](https://github.com/SimonCropp/Polyfill) 11.4.1 | 依存 DLL 2 個を伴う NuGet DLL、public 型 | なし | すべて |
@@ -171,7 +171,7 @@ sb.AppendInterpolated(CultureInfo.InvariantCulture, $"{x:F3},{y:F3}");
 ## 要件
 
 - Unity 2022.3.12f1 以降
-- Unity 2022.3.62f3、6000.3.9f1、6000.6.0f1 で [tools/run-compat.sh](./tools/run-compat.sh) により検証済み。結果: [docs/Compatibility.md](./docs/Compatibility.md#version-matrix)
+- Unity 2022.3.62f3、6000.3.27f2、6000.6.7f1 で [tools/run-compat.sh](./tools/run-compat.sh) により検証済み。結果: [docs/Compatibility.md](./docs/Compatibility.md#version-matrix)
 
 ## インストール
 
@@ -186,7 +186,7 @@ https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill
 特定のリリースに留めるには、タグを付けます。
 
 ```text
-https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.0
+https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.1
 ```
 
 ### プロジェクト設定 (C# 言語バージョン)

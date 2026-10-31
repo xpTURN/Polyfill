@@ -81,7 +81,7 @@ Klotho 소스 생성기는 컴포넌트, 데이터 에셋, 그리고 다른 어�
 | 지원 타입 | 프로젝트 전용 asmdef 에 손으로 복사한 파일 4개 | 패키지 참조 |
 | 설정 | 새 asmdef 마다 반복 | 패키지 1개, 메뉴 명령 1번 |
 
-우리 Unity 프로젝트 아홉 개가 Unity 2022.3.62f3, 6000.3.9f1, 6000.6.0f1 에서 이 패키지를 참조합니다.
+우리 Unity 프로젝트 아홉 개가 Unity 2022.3.62f3, 6000.3.27f2, 6000.6.7f1 에서 이 패키지를 참조합니다.
 
 ### 필요 없는 경우
 
@@ -100,7 +100,7 @@ Klotho 소스 생성기는 컴포넌트, 데이터 에셋, 그리고 다른 어�
 | 선택지 | 형태 | 언어 버전 설정 | 컴파일되는 기능 |
 |--------|------|----------------|-----------------|
 | 폴리필 없음 | 해당 없음 | 해당 없음 | 없음 |
-| **xpTURN.Polyfill 0.4.0** | UPM, 공유 어셈블리 하나, public 타입 | 예: 빌드, 패키지, IDE | 전부 |
+| **xpTURN.Polyfill 0.4.1** | UPM, 공유 어셈블리 하나, public 타입 | 예: 빌드, 패키지, IDE | 전부 |
 | [PolySharp](https://github.com/Sergio0694/PolySharp) 1.15.0, 1.16.0 | NuGet 소스 생성기, 어셈블리마다 internal 타입 | 아니요 | `[DynamicallyAccessedMembers]` 를 뺀 전부 |
 | `PolySharpIncludeRuntimeSupportedAttributes` 를 켠 PolySharp 1.16.0 | 같음 | 아니요 | 없음(CS8336). `.globalconfig` 로 내장 특성까지 끄면 전부 |
 | [PolyfillLib](https://github.com/SimonCropp/Polyfill) 11.4.1 | 의존 DLL 2개가 딸린 NuGet DLL, public 타입 | 아니요 | 전부 |
@@ -171,7 +171,7 @@ sb.AppendInterpolated(CultureInfo.InvariantCulture, $"{x:F3},{y:F3}");
 ## 요구 사항
 
 - Unity 2022.3.12f1 이상
-- Unity 2022.3.62f3, 6000.3.9f1, 6000.6.0f1 에서 [tools/run-compat.sh](./tools/run-compat.sh) 로 검증했습니다. 결과: [docs/Compatibility.md](./docs/Compatibility.md#version-matrix).
+- Unity 2022.3.62f3, 6000.3.27f2, 6000.6.7f1 에서 [tools/run-compat.sh](./tools/run-compat.sh) 로 검증했습니다. 결과: [docs/Compatibility.md](./docs/Compatibility.md#version-matrix).
 
 ## 설치
 
@@ -186,7 +186,7 @@ https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill
 특정 릴리스에 머물려면 태그를 붙입니다.
 
 ```text
-https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.0
+https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.1
 ```
 
 ### 프로젝트 설정 (C# 언어 버전)

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.1] - 2026-10-31
+
+No code or API changes. The package contents are the same as 0.4.0.
+
+### Changed
+
+- Verified on Unity 6000.3.27f2 and 6000.6.7f1 with `tools/run-compat.sh`: the probe, the package tests in the editor with both API compatibility levels and in an IL2CPP player, the Mono and IL2CPP smoke, and the comparison with other polyfill libraries. Every result matches 6000.3.9f1 and 6000.6.0f1, which `docs/Compatibility.md` and the README now replace with the new editors.
+- `tools/run-compat.sh` runs 2022.3.62f3, 6000.3.27f2 and 6000.6.7f1 when no version is given.
+- The development project `src/Polyfill` and the test projects `tests/PolyfillTests.6000.3` and `tests/PolyfillTests.6000.6` open in Unity 6000.3.27f2 and 6000.6.7f1.
+
+To stay on this release, add `#v0.4.1` to the Git URL.
+
 ## [0.4.0] - 2026-10-03
 
 ### Added

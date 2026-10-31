@@ -81,7 +81,7 @@ The Klotho source generator emits `[ModuleInitializer]` registrars for component
 | Support types | 4 hand-copied files in a project-local asmdef | package reference |
 | Setup | repeated for each new asmdef | 1 package, 1 menu command |
 
-Nine of our Unity projects now reference the package, on Unity 2022.3.62f3, 6000.3.9f1 and 6000.6.0f1.
+Nine of our Unity projects now reference the package, on Unity 2022.3.62f3, 6000.3.27f2 and 6000.6.7f1.
 
 ### When you do not need it
 
@@ -100,7 +100,7 @@ The last column says which of 12 type-dependent features compile in Unity 2022.3
 | Option | Form | Sets language version | Features that compile |
 |--------|------|-----------------------|-----------------------|
 | No polyfill | n/a | n/a | none |
-| **xpTURN.Polyfill 0.4.0** | UPM, one shared assembly, public types | Yes: build, packages, IDE | all |
+| **xpTURN.Polyfill 0.4.1** | UPM, one shared assembly, public types | Yes: build, packages, IDE | all |
 | [PolySharp](https://github.com/Sergio0694/PolySharp) 1.15.0, 1.16.0 | NuGet source generator, internal types per assembly | No | all but `[DynamicallyAccessedMembers]` |
 | PolySharp 1.16.0 with `PolySharpIncludeRuntimeSupportedAttributes` | same | No | none (CS8336), or all once a `.globalconfig` also turns the embedded attribute off |
 | [PolyfillLib](https://github.com/SimonCropp/Polyfill) 11.4.1 | NuGet DLL with 2 dependency DLLs, public types | No | all |
@@ -171,7 +171,7 @@ Integers, floating-point numbers, `decimal`, `bool`, `char`, `DateTime`, `DateTi
 ## Requirements
 
 - Unity 2022.3.12f1 or later
-- Verified on Unity 2022.3.62f3, 6000.3.9f1 and 6000.6.0f1 with [tools/run-compat.sh](./tools/run-compat.sh). Results: [docs/Compatibility.md](./docs/Compatibility.md#version-matrix).
+- Verified on Unity 2022.3.62f3, 6000.3.27f2 and 6000.6.7f1 with [tools/run-compat.sh](./tools/run-compat.sh). Results: [docs/Compatibility.md](./docs/Compatibility.md#version-matrix).
 
 ## Installation
 
@@ -186,7 +186,7 @@ https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill
 To stay on a release, add its tag:
 
 ```text
-https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.0
+https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.1
 ```
 
 ### Project settings (C# language version)
