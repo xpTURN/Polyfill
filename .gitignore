@@ -10,6 +10,9 @@
 # VSCode specific Folders
 **/.vscode
 
+# Claude Code project settings and skills (kept in the private repository)
+**/.claude/
+
 # Project specific Files
 **/*.csproj
 **/*.sln
