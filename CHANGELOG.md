@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.0] - 2026-11-14
+
+### Added
+
+- **Project Settings > xpTURN Polyfill**, also opened with **Edit > Polyfill > Settings…**: a page that turns the compiler arguments on or off, chooses the C# language version and applies both to every installed platform and to the generated `.csproj` files. It also shows what the Player settings hold.
+- The language version can be `10.0` or `preview` in editors before Unity 6000.5, and also `11.0` or `12.0` from Unity 6000.5. `ProjectSettings/xpTURN.Polyfill.Settings.json` keeps it as `langVersion`; a file without it means `preview`, as before.
+- A version that the editor's compiler does not accept is not applied, and the editor warns once per session. When a compilation in an open editor fails with CS1617 on `/langversion`, an Editor error names the platform's arguments and points to the settings page.
+- Editor tests (EditMode) in the test package, and in `tools/run-compat.sh` the EditMode run and a check that the chosen version reaches the Player settings, the compiler response files and the `.csproj` files.
+
+### Changed
+
+- `CSHARP_PREVIEW` is defined only when the chosen version is `preview`. Applying another version removes it.
+- The test project `tests/PolyfillTests.6000.0` opens in Unity 6000.0.85f2.
+- Verified on Unity 6000.3.28f1 and 6000.6.8f1 with `tools/run-compat.sh`: the probe, the package tests in the editor with both API compatibility levels and in an IL2CPP player, the Mono and IL2CPP smoke, and the comparison with other polyfill libraries. Every result matches 6000.3.27f2 and 6000.6.7f1, which `docs/Compatibility.md` and the README now replace with the new editors.
+- `tools/run-compat.sh` runs 2022.3.62f3, 6000.3.28f1 and 6000.6.8f1 when no version is given.
+- The development project `src/Polyfill` and the test projects `tests/PolyfillTests.6000.3` and `tests/PolyfillTests.6000.6` open in Unity 6000.3.28f1 and 6000.6.8f1.
+
+To stay on this release, add `#v0.5.0` to the Git URL.
+
 ## [0.4.1] - 2026-10-31
 
 No code or API changes. The package contents are the same as 0.4.0.

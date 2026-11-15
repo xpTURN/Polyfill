@@ -7,7 +7,7 @@ Unity プロジェクトで C# 9〜11 のコード（`record`、`init`、`requir
 Unity は .NET Standard 2.1 を対象にコンパイルし、既定の言語バージョンは C# 9.0 です。そのため二つのものが欠けています。このパッケージは両方を補います。
 
 - **Runtime**: コンパイラーが探す BCL 型（`IsExternalInit`、`RequiredMemberAttribute`、`InterpolatedStringHandlerAttribute` …）を、プロジェクトのすべてのアセンブリが使えるよう一度だけ public で宣言します。
-- **Editor**: メニューコマンド一つで、Player ビルドと生成される `.csproj` ファイルに `-langversion:preview` を適用し、Unity と IDE が同じ構文を扱うようにします。
+- **Editor**: Project Settings のページ一つで、Player ビルドと生成される `.csproj` ファイルに一つの C# 言語バージョン（既定は `preview`）を適用し、Unity と IDE が同じ構文を扱うようにします。
 
 ## なぜ必要か
 
@@ -100,7 +100,7 @@ Klotho のソースジェネレーターは、コンポーネント、データ�
 | 選択肢 | 形態 | 言語バージョンの設定 | コンパイルできる機能 |
 |--------|------|----------------------|----------------------|
 | ポリフィルなし | 該当なし | 該当なし | なし |
-| **xpTURN.Polyfill 0.4.1** | UPM、共有アセンブリ一つ、public 型 | あり: ビルド、パッケージ、IDE | すべて |
+| **xpTURN.Polyfill 0.5.0** | UPM、共有アセンブリ一つ、public 型 | あり: ビルド、パッケージ、IDE | すべて |
 | [PolySharp](https://github.com/Sergio0694/PolySharp) 1.15.0、1.16.0 | NuGet ソースジェネレーター、アセンブリごとの internal 型 | なし | `[DynamicallyAccessedMembers]` 以外すべて |
 | `PolySharpIncludeRuntimeSupportedAttributes` を有効にした PolySharp 1.16.0 | 同上 | なし | なし（CS8336）。`.globalconfig` で埋め込み属性も無効にするとすべて |
 | [PolyfillLib](https://github.com/SimonCropp/Polyfill) 11.4.1 | 依存 DLL 2 個を伴う NuGet DLL、public 型 | なし | すべて |
@@ -171,7 +171,7 @@ sb.AppendInterpolated(CultureInfo.InvariantCulture, $"{x:F3},{y:F3}");
 ## 要件
 
 - Unity 2022.3.12f1 以降
-- Unity 2022.3.62f3、6000.3.27f2、6000.6.7f1 で [tools/run-compat.sh](./tools/run-compat.sh) により検証済み。結果: [docs/Compatibility.md](./docs/Compatibility.md#version-matrix)
+- Unity 2022.3.62f3、6000.3.28f1、6000.6.8f1 で [tools/run-compat.sh](./tools/run-compat.sh) により検証済み。結果: [docs/Compatibility.md](./docs/Compatibility.md#version-matrix)
 
 ## インストール
 
@@ -186,24 +186,31 @@ https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill
 特定のリリースに留めるには、タグを付けます。
 
 ```text
-https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.1
+https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.5.0
 ```
 
 ### プロジェクト設定 (C# 言語バージョン)
 
-C# 9 より新しい構文には、二か所で新しい言語バージョンが必要です。ビルドのための Unity のコンパイラー引数と、IDE のための生成された `.csproj` ファイルです。メニューコマンド一つで両方を設定します。
+C# 9 より新しい構文には、二か所で新しい言語バージョンが必要です。ビルドのための Unity のコンパイラー引数と、IDE のための生成された `.csproj` ファイルです。設定ページ一つで両方を設定します。
 
-**Edit > Polyfill > Player Settings > Apply Additional Compiler Arguments -langversion (All Installed Platforms)**
+**Edit > Project Settings > xpTURN Polyfill**（または **Edit > Polyfill > Settings…**）
 
-このコマンドは次のことを行います。
+**Apply to all installed platforms** をオンにし、**Version** を選んで **Apply** を押します。リストには、そのエディターのコンパイラーが受け付けるバージョンだけが並びます。
 
-- インストール済みのすべてのプラットフォームについて、Player 設定の **Additional Compiler Arguments** に `-langversion:preview` を追加します。Unity のコンパイラーはこの値を使います。
-- 同じプラットフォームの **Scripting Define Symbols** に `CSHARP_PREVIEW` を追加し、コードで `#if CSHARP_PREVIEW` を確認できるようにします。
-- `.csproj` ファイルを `<LangVersion>preview</LangVersion>` で再生成し、IDE（Visual Studio、Cursor、OmniSharp など）が同じ構文を読めるようにします。以後の再生成でも保たれます。
+| Unity | Version |
+|-------|---------|
+| 2022.3、6000.0、6000.3 | `10.0`、`preview` |
+| 6000.6 | `10.0`、`11.0`、`12.0`、`preview` |
 
-この選択は `ProjectSettings/xpTURN.Polyfill.Settings.json` に保存されます。asmdef の隣に [docs/csc.rsp](./docs/csc.rsp) のような `csc.rsp` ファイルを置く必要はありません。**Edit > Polyfill > Regenerate Project Files** でいつでも `.csproj` ファイルを書き直せます。
+**Apply** は次のことを行います。
 
-元に戻すには **Edit > Polyfill > Player Settings > Remove Additional Compiler Arguments -langversion (All Installed Platforms)** を実行します。
+- インストール済みのすべてのプラットフォームについて、Player 設定の **Additional Compiler Arguments** に `-langversion:<バージョン>` を書き込みます。Unity のコンパイラーはこの値を使います。
+- バージョンが `preview` なら同じプラットフォームの **Scripting Define Symbols** に `CSHARP_PREVIEW` を追加し、ほかのバージョンなら削除します。コードで `#if CSHARP_PREVIEW` を確認できます。
+- `.csproj` ファイルを同じ `<LangVersion>` で再生成し、IDE（Visual Studio、Cursor、OmniSharp など）が同じ構文を読めるようにします。以後の再生成でも保たれます。
+
+既定のバージョンは `preview` です。この選択は `ProjectSettings/xpTURN.Polyfill.Settings.json` に保存され、0.5.0 より前に書かれたファイルのようにバージョンがなければ `preview` になります。asmdef の隣に [docs/csc.rsp](./docs/csc.rsp) のような `csc.rsp` ファイルを置く必要はありません。ページには Player 設定の現在の値も表示され、プラットフォームごとに違えば警告します。**Edit > Polyfill > Regenerate Project Files** でいつでも `.csproj` ファイルを書き直せます。
+
+メニューコマンド **Edit > Polyfill > Player Settings > Apply Additional Compiler Arguments -langversion (All Installed Platforms)** は保存されたバージョンを適用します。元に戻すには、オプションをオフにして **Apply** を押すか、**Edit > Polyfill > Player Settings > Remove Additional Compiler Arguments -langversion (All Installed Platforms)** を実行します。
 
 ### `preview` が受け付ける構文
 
@@ -219,9 +226,13 @@ Unity のリリースノートによると、6000.5 でコンパイラーが新�
 落とし穴:
 
 - この引数は `Library/PackageCache` のサードパーティ・Unity パッケージを含め、プロジェクトのすべてのアセンブリに適用されます。
+- 複数のエディターで開くプロジェクトでは、すべてが受け付けるバージョン（`10.0` または `preview`）を選んでください。Unity 6000.5 より前のエディターは `11.0` と `12.0` を拒否し（CS1617）、何もコンパイルしません。
+- 自分の `csc.rsp` で言語バージョンを決めているアセンブリはそのバージョンでビルドされますが、その `.csproj` にはここで選んだバージョンが表示されます。
 - ジェネリック属性（`[MyAttribute<int>]`）は Roslyn 4.3 でコンパイルできますが、Unity 2022.3 と 6000.3 の IL2CPP ビルドを、属性名を示さない `InvalidCastException` で壊します。Unity 6000.6 はビルドできます。
 - `ref` フィールドは Roslyn 4.3 でエラーなくコンパイルされますが、ランタイムがサポートしていません。Roslyn 4.10 は CS9064 を出します。
 - static abstract インターフェースメンバー（CS8919）とメソッドに付けた `[AsyncMethodBuilder]`（CS0592）は、三つのエディターのどれでもコンパイルできません。
+
+Player 設定に `-langversion:11.0` や `-langversion:12.0` が入ったプロジェクトを Unity 6000.5 より前のエディターで開くと、このパッケージを含むすべてのアセンブリが `CS1617: Invalid option '12.0' for /langversion` で失敗するため、このパッケージでは対処できません。`ProjectSettings/ProjectSettings.asset` の `additionalCompilerArguments` の下にある `- -langversion:12.0` の行をすべて `- -langversion:10.0` または `- -langversion:preview` に書き換え、`ProjectSettings/xpTURN.Polyfill.Settings.json` の `langVersion` も同じ値にしてください。値が入ったときにすでに開いていたエディターは、設定ページを案内する `[Polyfill]` エラーを出します。
 
 ### Assembly Definition の使い方
 

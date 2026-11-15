@@ -9,9 +9,13 @@
 # release gate:
 #
 #   1. apply  runs the package menu command that sets -langversion:preview and CSHARP_PREVIEW
-#   2. tests  runs the package tests in the editor (PlayMode platform)
+#   2. tests  runs the package tests in the editor (PlayMode platform) and the editor tests
+#             (EditMode platform)
 #   3. gate   Library/ScriptAssemblies/Case.C1_Polyfill.dll exists (the probe compiled), no test
 #             failed or was inconclusive, and the test run exited with 0
+#   4. langversion  with a settings file from 0.4.1 (no langVersion), Player Settings, the Bee
+#             response files and the .csproj files hold preview; with "langVersion": "10.0" they
+#             hold 10.0. The settings file is set back to preview afterwards
 #
 # The gate looks for the probe DLL rather than for error lines: Bee stops after the first failing
 # assembly, so a log without errors does not mean that the probe compiled.
@@ -19,7 +23,7 @@
 # Usage:
 #   tools/run-compat.sh [options] [<unity-version>...]
 #
-#   Without a version, runs 2022.3.62f3, 6000.3.27f2 and 6000.6.7f1 in turn.
+#   Without a version, runs 2022.3.62f3, 6000.3.28f1 and 6000.6.8f1 in turn.
 #
 # Options:
 #   --smoke          also build Mono and IL2CPP players (StandaloneOSX, arm64) and run the smoke
@@ -88,7 +92,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 if [[ ${#VERSIONS[@]} -eq 0 ]]; then
-  VERSIONS=(2022.3.62f3 6000.3.27f2 6000.6.7f1)
+  VERSIONS=(2022.3.62f3 6000.3.28f1 6000.6.8f1)
 fi
 
 # ── Colors (only when writing to a tty) ──────────────────────────────────────
@@ -159,6 +163,8 @@ run_tests() {
 # ProjectVersion.txt makes Unity open the folder as an existing project, which keeps the manifest
 # as written (a new project gets the editor's default packages added). The package is copied in,
 # not referenced through "file:": Unity rewrites the .meta files of a local package it can write to.
+# The Visual Studio package is listed for its project generator, which writes the .csproj files for
+# step 4 whatever external code editor the machine has chosen.
 prepare_project() {
   if [[ ${CLEAN} -eq 1 ]]; then rm -rf "${WORK}"; fi
   mkdir -p "${PROJECT}/Packages" "${PROJECT}/ProjectSettings"
@@ -172,9 +178,12 @@ prepare_project() {
   local framework
   framework="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["packages"]["com.unity.test-framework"]["version"])' \
     "${CONTENTS}/Resources/PackageManager/Editor/manifest.json")" || return 1
+  local vs=2.0.29
+  case "${VERSION}" in 2022.3.*) vs=2.0.22 ;; esac
   cat > "${PROJECT}/Packages/manifest.json" <<EOF
 {
   "dependencies": {
+    "com.unity.ide.visualstudio": "${vs}",
     "com.unity.test-framework": "${framework}"
   }
 }
@@ -182,12 +191,35 @@ EOF
 }
 
 # ── Steps ────────────────────────────────────────────────────────────────────
+APPLY=xpTURN.Polyfill.Editor.PlayerSettingsAdditionalCompilerArguments.ApplyArgumentsForAllTargets
+SETTINGS_JSON() { echo "${PROJECT}/ProjectSettings/xpTURN.Polyfill.Settings.json"; }
+
 step_gate() {
-  begin gate apply_exit tests_editor_exit
+  begin gate apply_exit tests_editor_exit tests_editmode_exit h2_report_exit
+  # A settings file from 0.4.1 (no langVersion) gives the same gate as before
+  printf '{\n    "applyArgumentsForAllTargets": true\n}\n' > "$(SETTINGS_JSON)"
   step "apply" "log: ${WORK}/apply.log"
-  unity 1800 "${WORK}/apply.log" -executeMethod xpTURN.Polyfill.Editor.PlayerSettingsAdditionalCompilerArguments.ApplyArgumentsForAllTargets -quit
+  unity 1800 "${WORK}/apply.log" -executeMethod "${APPLY}" -quit
   record apply_exit $?
   run_tests editor PlayMode 1800
+  run_tests editmode EditMode 1800
+  rm -f "${WORK}/h2-report.txt"
+  unity 600 "${WORK}/h2-report.log" -executeMethod CompatLangVersion.Report -compatLangVersionReport "${WORK}/h2-report.txt" -quit
+  record h2_report_exit $?
+}
+
+# Step 4: "langVersion": "10.0" reaches Player Settings, the response files and the .csproj files; then back to preview
+step_langversion() {
+  begin langversion h1_apply_exit h1_report_exit h1_restore_exit
+  printf '{\n    "applyArgumentsForAllTargets": true,\n    "langVersion": "10.0"\n}\n' > "$(SETTINGS_JSON)"
+  unity 1800 "${WORK}/h1-apply.log" -executeMethod "${APPLY}" -quit
+  record h1_apply_exit $?
+  rm -f "${WORK}/h1-report.txt"
+  unity 1800 "${WORK}/h1-report.log" -executeMethod CompatLangVersion.Report -compatLangVersionReport "${WORK}/h1-report.txt" -quit
+  record h1_report_exit $?
+  printf '{\n    "applyArgumentsForAllTargets": true,\n    "langVersion": "preview"\n}\n' > "$(SETTINGS_JSON)"
+  unity 1800 "${WORK}/h1-restore.log" -executeMethod "${APPLY}" -quit
+  record h1_restore_exit $?
 }
 
 step_net_framework() {
@@ -450,6 +482,45 @@ def probe_result(work, status, version):
     detail = f"{passed}/{total}, Case.C1_Polyfill.dll {'present' if dll else 'missing'}, apply exit {status.get('apply_exit', 'not run')}"
     return (detail, ok, f"{passed} / {total}" if ok else f"FAIL: {passed} / {total}")
 
+# A report from CompatLangVersion.Report: every target that has a -langversion has exactly the
+# expected one (and CSHARP_PREVIEW only for preview), every response file has it right after
+# Unity's 9.0, and every .csproj has it.
+def report_result(work, status, name, value, keys):
+    bad_exits = [f"{key} {status.get(key, 'not run')}" for key in keys if status.get(key) != "0"]
+    try:
+        lines = [l.rstrip("\n") for l in open(os.path.join(work, f"{name}-report.txt"), encoding="utf-8")]
+    except OSError:
+        return ("no report" + (f", {', '.join(bad_exits)}" if bad_exits else ""), False, None)
+    wrong, targets, rsps, csprojs = [], 0, 0, 0
+    for line in lines:
+        m = re.match(r"target (\S+) args=\[(.*)\] symbols=\[(.*)\]$", line)
+        if m:
+            found = re.findall(r"(?i)-langversion:(\S+)", m.group(2))
+            if not found:
+                continue
+            targets += 1
+            symbol = "CSHARP_PREVIEW" in [s.strip() for s in m.group(3).split(";")]
+            if found != [value] or symbol != (value == "preview"):
+                wrong.append(line)
+        elif line.startswith("rsp "):
+            rsps += 1
+            parts = line.split(" ", 2)
+            if (parts[2].split(" > ") if len(parts) > 2 else [])[:2] != ["9.0", value]:
+                wrong.append(line)
+        elif line.startswith("csproj "):
+            csprojs += 1
+            if line.split()[-1] != value:
+                wrong.append(line)
+        elif line == "generator missing":
+            wrong.append(line)
+    ok = not bad_exits and not wrong and targets > 0 and rsps > 0 and csprojs > 0
+    detail = f"expected {value}: {targets} targets, {rsps} response files, {csprojs} .csproj"
+    if bad_exits:
+        detail += f", {', '.join(bad_exits)}"
+    if wrong:
+        detail += f", wrong: {'; '.join(wrong[:3])}"
+    return (detail, ok, None)
+
 def smoke_result(work, status, backend, version):
     expected = 12 + (6 if newer_than_6000_5(version) else 0)
     try:
@@ -469,12 +540,15 @@ def smoke_result(work, status, backend, version):
 STEPS = [
     ("RUN_GATE", "apply_exit", "probe", "Probe: type-dependent features", lambda w, s, v: probe_result(w, s, v)),
     ("RUN_GATE", "tests_editor_exit", "tests (editor)", "Package tests: editor, .NET Standard 2.1", lambda w, s, v: tests_result(w, s, "editor")),
+    ("RUN_GATE", "tests_editmode_exit", "tests (EditMode)", None, lambda w, s, v: tests_result(w, s, "editmode")),
+    ("RUN_GATE", "h2_report_exit", "settings from 0.4.1", None, lambda w, s, v: report_result(w, s, "h2", "preview", ("h2_report_exit",))),
+    ("RUN_GATE", "h1_report_exit", "langVersion 10.0", None, lambda w, s, v: report_result(w, s, "h1", "10.0", ("h1_apply_exit", "h1_report_exit", "h1_restore_exit"))),
     ("RUN_NETFX", "tests_netfx_exit", "tests (.NET Framework)", "Package tests: editor, .NET Framework", lambda w, s, v: tests_result(w, s, "netfx")),
     ("RUN_PLAYER_TESTS", "tests_player_exit", "tests (IL2CPP player)", "Package tests: IL2CPP player", lambda w, s, v: tests_result(w, s, "player")),
     ("RUN_SMOKE", "build_mono_exit", "smoke mono", "Smoke: Mono player", lambda w, s, v: smoke_result(w, s, "mono", v)),
     ("RUN_SMOKE", "build_il2cpp_exit", "smoke il2cpp", "Smoke: IL2CPP player", lambda w, s, v: smoke_result(w, s, "il2cpp", v)),
 ]
-MATRIX_ORDER = [step[3] for step in STEPS] + ["Measured"]
+MATRIX_ORDER = [step[3] for step in STEPS if step[3]] + ["Measured"]
 
 failed_any = False
 matrix, alternatives, alternative_order = {}, {}, []
@@ -492,7 +566,7 @@ for version in versions:
         detail, ok, cell = result(work, status, version)
         if want(option):
             rows.append((label, detail, ok))
-        if key in status:
+        if key in status and docs_label:
             cells[docs_label] = cell
     dates = [value for key, value in status.items() if key.endswith("_date") and key not in ("editor_date", "alternatives_date")]
     if cells and dates:
@@ -578,7 +652,7 @@ for VERSION in "${VERSIONS[@]}"; do
     continue
   fi
   begin editor editor
-  if [[ ${RUN_GATE} -eq 1 ]]; then step_gate; fi
+  if [[ ${RUN_GATE} -eq 1 ]]; then step_gate; step_langversion; fi
   if [[ ${RUN_NETFX} -eq 1 ]]; then step_net_framework; fi
   if [[ ${RUN_PLAYER_TESTS} -eq 1 ]]; then step_player_tests; fi
   if [[ ${RUN_SMOKE} -eq 1 ]]; then step_smoke; fi

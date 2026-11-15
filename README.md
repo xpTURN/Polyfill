@@ -7,7 +7,7 @@ One package that lets a Unity project compile C# 9 to 11 code (`record`, `init`,
 Unity compiles against .NET Standard 2.1 and defaults to C# 9.0, so two things are missing. This package supplies both:
 
 - **Runtime**: the BCL types the compiler looks for (`IsExternalInit`, `RequiredMemberAttribute`, `InterpolatedStringHandlerAttribute`, …), declared once and publicly for every assembly in the project.
-- **Editor**: one menu command that applies `-langversion:preview` to the Player build and to the generated `.csproj` files, so Unity and the IDE agree.
+- **Editor**: a Project Settings page that applies one C# language version (`preview` by default) to the Player build and to the generated `.csproj` files, so Unity and the IDE agree.
 
 ## Why you need it
 
@@ -100,7 +100,7 @@ The last column says which of 12 type-dependent features compile in Unity 2022.3
 | Option | Form | Sets language version | Features that compile |
 |--------|------|-----------------------|-----------------------|
 | No polyfill | n/a | n/a | none |
-| **xpTURN.Polyfill 0.4.1** | UPM, one shared assembly, public types | Yes: build, packages, IDE | all |
+| **xpTURN.Polyfill 0.5.0** | UPM, one shared assembly, public types | Yes: build, packages, IDE | all |
 | [PolySharp](https://github.com/Sergio0694/PolySharp) 1.15.0, 1.16.0 | NuGet source generator, internal types per assembly | No | all but `[DynamicallyAccessedMembers]` |
 | PolySharp 1.16.0 with `PolySharpIncludeRuntimeSupportedAttributes` | same | No | none (CS8336), or all once a `.globalconfig` also turns the embedded attribute off |
 | [PolyfillLib](https://github.com/SimonCropp/Polyfill) 11.4.1 | NuGet DLL with 2 dependency DLLs, public types | No | all |
@@ -171,7 +171,7 @@ Integers, floating-point numbers, `decimal`, `bool`, `char`, `DateTime`, `DateTi
 ## Requirements
 
 - Unity 2022.3.12f1 or later
-- Verified on Unity 2022.3.62f3, 6000.3.27f2 and 6000.6.7f1 with [tools/run-compat.sh](./tools/run-compat.sh). Results: [docs/Compatibility.md](./docs/Compatibility.md#version-matrix).
+- Verified on Unity 2022.3.62f3, 6000.3.28f1 and 6000.6.8f1 with [tools/run-compat.sh](./tools/run-compat.sh). Results: [docs/Compatibility.md](./docs/Compatibility.md#version-matrix).
 
 ## Installation
 
@@ -186,24 +186,31 @@ https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill
 To stay on a release, add its tag:
 
 ```text
-https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.1
+https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.5.0
 ```
 
 ### Project settings (C# language version)
 
-Syntax newer than C# 9 needs a newer language version in two places: Unity's compiler arguments, for the build, and the generated `.csproj` files, for the IDE. One menu command sets both:
+Syntax newer than C# 9 needs a newer language version in two places: Unity's compiler arguments, for the build, and the generated `.csproj` files, for the IDE. One settings page sets both:
 
-**Edit > Polyfill > Player Settings > Apply Additional Compiler Arguments -langversion (All Installed Platforms)**
+**Edit > Project Settings > xpTURN Polyfill** (or **Edit > Polyfill > Settings…**)
 
-The command:
+Turn on **Apply to all installed platforms**, choose a **Version** and press **Apply**. The list holds the versions that the editor's compiler accepts:
 
-- adds `-langversion:preview` to the Player settings' **Additional Compiler Arguments** of every installed platform, which Unity's compiler uses;
-- adds `CSHARP_PREVIEW` to the **Scripting Define Symbols** of the same platforms, so code can check `#if CSHARP_PREVIEW`;
-- regenerates the `.csproj` files with `<LangVersion>preview</LangVersion>`, so IDEs (Visual Studio, Cursor, OmniSharp and others) parse the same syntax. Later regenerations keep it.
+| Unity | Version |
+|-------|---------|
+| 2022.3, 6000.0, 6000.3 | `10.0`, `preview` |
+| 6000.6 | `10.0`, `11.0`, `12.0`, `preview` |
 
-The choice is saved in `ProjectSettings/xpTURN.Polyfill.Settings.json`. No `csc.rsp` file such as [docs/csc.rsp](./docs/csc.rsp) is needed beside your asmdefs. **Edit > Polyfill > Regenerate Project Files** rewrites the `.csproj` files at any time.
+**Apply**:
 
-To undo, run **Edit > Polyfill > Player Settings > Remove Additional Compiler Arguments -langversion (All Installed Platforms)**.
+- writes `-langversion:<version>` to the Player settings' **Additional Compiler Arguments** of every installed platform, which Unity's compiler uses;
+- adds `CSHARP_PREVIEW` to the **Scripting Define Symbols** of the same platforms when the version is `preview`, and removes it for any other version, so code can check `#if CSHARP_PREVIEW`;
+- regenerates the `.csproj` files with the same `<LangVersion>`, so IDEs (Visual Studio, Cursor, OmniSharp and others) parse the same syntax. Later regenerations keep it.
+
+The default version is `preview`. The choice is saved in `ProjectSettings/xpTURN.Polyfill.Settings.json`; a file without a version, as written before 0.5.0, means `preview`. No `csc.rsp` file such as [docs/csc.rsp](./docs/csc.rsp) is needed beside your asmdefs. The page also shows what the Player settings hold and warns when a platform differs. **Edit > Polyfill > Regenerate Project Files** rewrites the `.csproj` files at any time.
+
+The menu command **Edit > Polyfill > Player Settings > Apply Additional Compiler Arguments -langversion (All Installed Platforms)** applies the saved version. To undo, turn the option off and press **Apply**, or run **Edit > Polyfill > Player Settings > Remove Additional Compiler Arguments -langversion (All Installed Platforms)**.
 
 ### What `preview` accepts
 
@@ -219,9 +226,13 @@ Unity's release notes move the compiler forward in 6000.5. Guard code that needs
 Pitfalls:
 
 - The argument applies to every assembly in the project, including third-party and Unity packages in `Library/PackageCache`.
+- A project that several editors open needs a version that all of them accept: `10.0` or `preview`. Editors before Unity 6000.5 reject `11.0` and `12.0` (CS1617) and compile nothing.
+- An assembly whose own `csc.rsp` sets a language version builds with that version, but its `.csproj` shows the version chosen here.
 - Generic attributes (`[MyAttribute<int>]`) compile on Roslyn 4.3 but break the IL2CPP build in Unity 2022.3 and 6000.3 with an `InvalidCastException` that does not name the attribute. Unity 6000.6 builds them.
 - `ref` fields compile on Roslyn 4.3 without an error, but the runtime does not support them. Roslyn 4.10 reports CS9064.
 - Static abstract interface members (CS8919) and `[AsyncMethodBuilder]` on a method (CS0592) compile in none of the three editors.
+
+If an editor before Unity 6000.5 opens a project whose Player settings hold `-langversion:11.0` or `-langversion:12.0`, every assembly fails with `CS1617: Invalid option '12.0' for /langversion`, this package included, so it cannot help. In `ProjectSettings/ProjectSettings.asset`, change each `- -langversion:12.0` line under `additionalCompilerArguments` to `- -langversion:10.0` or `- -langversion:preview`, and set the same value as `langVersion` in `ProjectSettings/xpTURN.Polyfill.Settings.json`. An editor that is already open when the value arrives logs a `[Polyfill]` error that points to the settings page.
 
 ### Assembly Definition usage
 

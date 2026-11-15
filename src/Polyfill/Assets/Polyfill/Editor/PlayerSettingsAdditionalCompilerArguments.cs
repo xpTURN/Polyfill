@@ -18,13 +18,17 @@ namespace xpTURN.Polyfill.Editor
     {
         public const string SettingsFileName = "xpTURN.Polyfill.Settings.json";
         public const string LangVersionPrefix = "-langversion:";
+        /// <summary>The argument for the default value (preview). The applied value is the one chosen in Project Settings &gt; xpTURN Polyfill.</summary>
         public const string DesiredLangVersion = "-langversion:preview";
         public const string ScriptingDefineSymbolForLatestCSharp = "CSHARP_PREVIEW";
 
+        private const string UnsupportedWarnedKey = "xpTURN.Polyfill.UnsupportedLangVersionWarned";
+
         [Serializable]
-        private class Settings
+        internal class Settings
         {
             public bool applyArgumentsForAllTargets;
+            public string langVersion = LangVersionOptions.Default;
         }
 
         private static Settings _cachedSettings;
@@ -36,9 +40,8 @@ namespace xpTURN.Polyfill.Editor
         }
 
         /// <summary>Reads from file once on assembly load and caches the result.</summary>
-        private static Settings LoadSettings()
+        internal static Settings LoadSettings(string path)
         {
-            var path = GetSettingsPath();
             if (!File.Exists(path))
                 return new Settings { applyArgumentsForAllTargets = false };
 
@@ -66,13 +69,35 @@ namespace xpTURN.Polyfill.Editor
         private static void EnsureSettingsLoaded()
         {
             if (_cachedSettings != null) return;
-            _cachedSettings = LoadSettings();
+            _cachedSettings = LoadSettings(GetSettingsPath());
         }
 
         [InitializeOnLoadMethod]
         private static void OnEditorLoad()
         {
             EnsureSettingsLoaded();
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
+            if (!_cachedSettings.applyArgumentsForAllTargets) return;
+            var value = GetLangVersion();
+            if (LangVersionOptions.IsSupported(value) || SessionState.GetBool(UnsupportedWarnedKey, false)) return;
+            SessionState.SetBool(UnsupportedWarnedKey, true);
+            Debug.LogWarning($"[Polyfill] {SettingsFileName} sets C# language version '{value}', which this editor's compiler does not accept. Choose one of {string.Join(", ", LangVersionOptions.Values)} in Project Settings > xpTURN Polyfill.");
+        }
+
+        /// <summary>The chosen C# language version (preview when the file does not set one).</summary>
+        internal static string GetLangVersion()
+        {
+            EnsureSettingsLoaded();
+            return LangVersionOptions.Normalize(_cachedSettings.langVersion);
+        }
+
+        /// <summary>Saves both settings to ProjectSettings JSON.</summary>
+        internal static void SaveSettings(bool applyArgumentsForAllTargets, string langVersion)
+        {
+            EnsureSettingsLoaded();
+            _cachedSettings.applyArgumentsForAllTargets = applyArgumentsForAllTargets;
+            _cachedSettings.langVersion = langVersion;
+            SaveSettings(_cachedSettings);
         }
 
         /// <summary>
@@ -100,6 +125,13 @@ namespace xpTURN.Polyfill.Editor
         [MenuItem("Edit/Polyfill/Player Settings/Apply Additional Compiler Arguments -langversion (All Installed Platforms)")]
         public static void ApplyArgumentsForAllTargets()
         {
+            var value = GetLangVersion();
+            if (!LangVersionOptions.IsSupported(value))
+            {
+                Debug.LogError($"[Polyfill] Not applied: this editor's compiler does not accept C# language version '{value}'. Choose one of {string.Join(", ", LangVersionOptions.Values)} in Project Settings > xpTURN Polyfill.");
+                return;
+            }
+
             SetApplyArgumentsForAllTargetsEnabled(true);
             foreach (var target in GetActiveNamedBuildTargets())
             {
@@ -136,6 +168,15 @@ namespace xpTURN.Polyfill.Editor
             }
 
             RegenerateProjectFiles();
+        }
+
+        /// <summary>
+        /// Opens Project Settings &gt; xpTURN Polyfill.
+        /// </summary>
+        [MenuItem("Edit/Polyfill/Settings…")]
+        private static void OpenSettings()
+        {
+            SettingsService.OpenProjectSettings(PolyfillSettingsProvider.SettingsPath);
         }
 
         /// <summary>
@@ -188,7 +229,7 @@ namespace xpTURN.Polyfill.Editor
         /// <summary>
         /// Returns NamedBuildTargets only for platforms installed in the current editor. Uninstalled platforms are excluded.
         /// </summary>
-        private static IEnumerable<NamedBuildTarget> GetActiveNamedBuildTargets()
+        internal static IEnumerable<NamedBuildTarget> GetActiveNamedBuildTargets()
         {
             var supportedGroups = new HashSet<BuildTargetGroup>();
 #pragma warning disable IL3050
@@ -227,28 +268,6 @@ namespace xpTURN.Polyfill.Editor
         }
 
         /// <summary>
-        /// Adds the given define symbol to Scripting Define Symbols for the build target if not already present.
-        /// </summary>
-        private static void AddScriptingDefineSymbol(NamedBuildTarget buildTarget, string symbol)
-        {
-            var current = PlayerSettings.GetScriptingDefineSymbols(buildTarget);
-
-            var list = new List<string>();
-            foreach (var s in current.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
-            {
-                var trimmed = s.Trim();
-                if (!string.IsNullOrEmpty(trimmed))
-                    list.Add(trimmed);
-            }
-
-            if (list.Contains(symbol))
-                return;
-
-            list.Add(symbol);
-            PlayerSettings.SetScriptingDefineSymbols(buildTarget, list.ToArray());
-        }
-
-        /// <summary>
         /// Removes the given define symbol from Scripting Define Symbols for the build target.
         /// </summary>
         private static void RemoveScriptingDefineSymbol(NamedBuildTarget buildTarget, string symbol)
@@ -269,72 +288,23 @@ namespace xpTURN.Polyfill.Editor
         }
 
         /// <summary>
-        /// -langversion: replaces existing value if present, otherwise adds it. Other arguments are merged.
-        /// Skips if already set to DesiredLangVersion (preview).
+        /// Writes -langversion:&lt;chosen value&gt; in place of any existing -langversion, and CSHARP_PREVIEW only for preview.
+        /// Leaves the target untouched where nothing changes.
         /// </summary>
         public static void ApplyArgumentsForTarget(NamedBuildTarget buildTarget)
         {
-            // Add '-langversion:preview' arguments
+            var value = GetLangVersion();
             var existing = PlayerSettings.GetAdditionalCompilerArguments(buildTarget);
-            if (!IsAlreadyDesiredLangVersion(existing))
-            {
-                var result = new List<string>();
-                var langVersionReplaced = false;
+            var merged = LangVersionOptions.MergeArguments(existing, value);
+            if (!LangVersionOptions.SameEntries(existing, merged))
+                PlayerSettings.SetAdditionalCompilerArguments(buildTarget, merged);
 
-                foreach (var arg in existing)
-                {
-                    if (IsLangVersionArgument(arg))
-                    {
-                        if (!langVersionReplaced)
-                        {
-                            // Detect -langversion:9 etc. and replace with desired value
-                            var pattern = @"(?i)-langversion:\S*";
-                            var content = Regex.Replace(arg, pattern, DesiredLangVersion);
-                            result.Add(content.Trim());
-                            langVersionReplaced = true;
-                        }
-                    }
-                    else
-                    {
-                        if (!string.IsNullOrEmpty(arg.Trim()))
-                            result.Add(arg);
-                    }
-                }
+            var symbols = PlayerSettings.GetScriptingDefineSymbols(buildTarget).Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            var mergedSymbols = LangVersionOptions.MergeSymbols(symbols, value);
+            if (!LangVersionOptions.SameEntries(symbols, mergedSymbols))
+                PlayerSettings.SetScriptingDefineSymbols(buildTarget, mergedSymbols);
 
-                if (!langVersionReplaced)
-                    result.Add(DesiredLangVersion);
-
-                PlayerSettings.SetAdditionalCompilerArguments(buildTarget, result.ToArray());
-            }
-
-            // Add Scripting Define Symbol 'CSHARP_PREVIEW'
-            AddScriptingDefineSymbol(buildTarget, ScriptingDefineSymbolForLatestCSharp);
-            Debug.Log($"[Polyfill] Additional Compiler Arguments applied for {buildTarget.TargetName}: -langversion -> {DesiredLangVersion}, Scripting Define Symbol added: {ScriptingDefineSymbolForLatestCSharp}");
-        }
-
-        /// <summary>
-        /// Detects whether existing arguments already contain the desired -langversion value (e.g. preview).
-        /// Only considers -langversion arguments; returns true only when the trimmed value matches DesiredLangVersion.
-        /// </summary>
-        private static bool IsAlreadyDesiredLangVersion(string[] existing)
-        {
-            if (existing == null) return false;
-            foreach (var arg in existing)
-            {
-                if (arg == null) continue;
-                if (!IsLangVersionArgument(arg)) continue;
-                if (arg.Contains(DesiredLangVersion, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Detects whether the argument is a -langversion: argument.
-        /// </summary>
-        private static bool IsLangVersionArgument(string arg)
-        {
-            return arg != null && arg.Contains(LangVersionPrefix, StringComparison.OrdinalIgnoreCase);
+            Debug.Log($"[Polyfill] Additional Compiler Arguments applied for {buildTarget.TargetName}: -langversion -> {LangVersionPrefix}{value}, {ScriptingDefineSymbolForLatestCSharp} {(value == LangVersionOptions.Preview ? "added" : "removed")}");
         }
     }
 }

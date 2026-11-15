@@ -1,12 +1,11 @@
 using System;
-using System.Text.RegularExpressions;
 
 using UnityEditor;
 
 namespace xpTURN.Polyfill.Editor
 {
     /// <summary>
-    /// Sets LangVersion to 'preview' in generated .csproj files.
+    /// Sets LangVersion in generated .csproj files to the C# language version chosen in Project Settings &gt; xpTURN Polyfill.
     /// IDEs (Cursor, OmniSharp, VS, etc.) read this .csproj for C# 11 syntax support.
     /// Unity editor compilation does not use .csproj, so -langversion for editor builds must be set separately
     /// via csc.rsp or Player Settings -> Additional Compiler Arguments (this package's menu).
@@ -16,16 +15,18 @@ namespace xpTURN.Polyfill.Editor
     {
         public static string OnGeneratedCSProject(string path, string content)
         {
-            if (!PlayerSettingsAdditionalCompilerArguments.GetApplyArgumentsForAllTargetsEnabled())
+            return Process(path, content, PlayerSettingsAdditionalCompilerArguments.GetApplyArgumentsForAllTargetsEnabled(), PlayerSettingsAdditionalCompilerArguments.GetLangVersion());
+        }
+
+        internal static string Process(string path, string content, bool enabled, string langVersion)
+        {
+            if (!enabled || !LangVersionOptions.IsSupported(langVersion))
                 return content;
 
             if (!path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
                 return content;
 
-            var pattern = @"<LangVersion>[^<]*</LangVersion>";
-            var replace = @"<LangVersion>preview</LangVersion>";
-            content = Regex.Replace(content, pattern, replace);
-            return content;
+            return LangVersionOptions.ReplaceCsprojLangVersion(content, langVersion);
         }
     }
 }

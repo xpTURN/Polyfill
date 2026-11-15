@@ -7,7 +7,7 @@
 Unity 以 .NET Standard 2.1 为目标进行编译，默认语言版本是 C# 9.0，因此缺了两样东西。这个包把两样都补上：
 
 - **Runtime**：编译器要找的 BCL 类型（`IsExternalInit`、`RequiredMemberAttribute`、`InterpolatedStringHandlerAttribute` …），只声明一次，并以 public 提供给项目中的所有程序集。
-- **Editor**：一个菜单命令，把 `-langversion:preview` 应用到 Player 构建和生成的 `.csproj` 文件，让 Unity 与 IDE 使用相同的语法。
+- **Editor**：一个 Project Settings 页面，把同一个 C# 语言版本（默认 `preview`）应用到 Player 构建和生成的 `.csproj` 文件，让 Unity 与 IDE 使用相同的语法。
 
 ## 为什么需要它
 
@@ -100,7 +100,7 @@ Klotho 的源生成器会为组件、数据资源，以及在其他程序集中�
 | 方案 | 形式 | 设置语言版本 | 能编译的功能 |
 |------|------|--------------|--------------|
 | 不用 polyfill | 不适用 | 不适用 | 无 |
-| **xpTURN.Polyfill 0.4.1** | UPM，一个共享程序集，public 类型 | 是：构建、包、IDE | 全部 |
+| **xpTURN.Polyfill 0.5.0** | UPM，一个共享程序集，public 类型 | 是：构建、包、IDE | 全部 |
 | [PolySharp](https://github.com/Sergio0694/PolySharp) 1.15.0、1.16.0 | NuGet 源生成器，每个程序集一份 internal 类型 | 否 | 除 `[DynamicallyAccessedMembers]` 外全部 |
 | 启用 `PolySharpIncludeRuntimeSupportedAttributes` 的 PolySharp 1.16.0 | 同上 | 否 | 无（CS8336）；用 `.globalconfig` 同时关闭嵌入特性后为全部 |
 | [PolyfillLib](https://github.com/SimonCropp/Polyfill) 11.4.1 | 附带 2 个依赖 DLL 的 NuGet DLL，public 类型 | 否 | 全部 |
@@ -171,7 +171,7 @@ sb.AppendInterpolated(CultureInfo.InvariantCulture, $"{x:F3},{y:F3}");
 ## 要求
 
 - Unity 2022.3.12f1 或更高版本
-- 已在 Unity 2022.3.62f3、6000.3.27f2 和 6000.6.7f1 上用 [tools/run-compat.sh](./tools/run-compat.sh) 验证。结果：[docs/Compatibility.md](./docs/Compatibility.md#version-matrix)
+- 已在 Unity 2022.3.62f3、6000.3.28f1 和 6000.6.8f1 上用 [tools/run-compat.sh](./tools/run-compat.sh) 验证。结果：[docs/Compatibility.md](./docs/Compatibility.md#version-matrix)
 
 ## 安装
 
@@ -186,24 +186,31 @@ https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill
 如果要固定在某个发布版本，加上它的标签：
 
 ```text
-https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.1
+https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.5.0
 ```
 
 ### 项目设置 (C# 语言版本)
 
-比 C# 9 更新的语法需要在两个地方设置更新的语言版本：用于构建的 Unity 编译器参数，以及用于 IDE 的生成的 `.csproj` 文件。一个菜单命令同时设置两者：
+比 C# 9 更新的语法需要在两个地方设置更新的语言版本：用于构建的 Unity 编译器参数，以及用于 IDE 的生成的 `.csproj` 文件。一个设置页同时设置两者：
 
-**Edit > Polyfill > Player Settings > Apply Additional Compiler Arguments -langversion (All Installed Platforms)**
+**Edit > Project Settings > xpTURN Polyfill**（或 **Edit > Polyfill > Settings…**）
 
-这个命令会：
+打开 **Apply to all installed platforms**，选择 **Version**，然后按 **Apply**。列表中只有该编辑器的编译器接受的版本：
 
-- 为每个已安装的平台，在 Player 设置的 **Additional Compiler Arguments** 中加入 `-langversion:preview`，供 Unity 的编译器使用；
-- 在相同平台的 **Scripting Define Symbols** 中加入 `CSHARP_PREVIEW`，让代码可以用 `#if CSHARP_PREVIEW` 判断；
-- 以 `<LangVersion>preview</LangVersion>` 重新生成 `.csproj` 文件，让 IDE（Visual Studio、Cursor、OmniSharp 等）解析相同的语法。之后重新生成时也会保留。
+| Unity | Version |
+|-------|---------|
+| 2022.3、6000.0、6000.3 | `10.0`、`preview` |
+| 6000.6 | `10.0`、`11.0`、`12.0`、`preview` |
 
-这一选择保存在 `ProjectSettings/xpTURN.Polyfill.Settings.json` 中。不需要在 asmdef 旁放置 [docs/csc.rsp](./docs/csc.rsp) 这样的 `csc.rsp` 文件。**Edit > Polyfill > Regenerate Project Files** 可以随时重写 `.csproj` 文件。
+**Apply** 会：
 
-要撤销，运行 **Edit > Polyfill > Player Settings > Remove Additional Compiler Arguments -langversion (All Installed Platforms)**。
+- 为每个已安装的平台，在 Player 设置的 **Additional Compiler Arguments** 中写入 `-langversion:<版本>`，供 Unity 的编译器使用；
+- 版本为 `preview` 时，在相同平台的 **Scripting Define Symbols** 中加入 `CSHARP_PREVIEW`，其他版本则移除它，让代码可以用 `#if CSHARP_PREVIEW` 判断；
+- 以相同的 `<LangVersion>` 重新生成 `.csproj` 文件，让 IDE（Visual Studio、Cursor、OmniSharp 等）解析相同的语法。之后重新生成时也会保留。
+
+默认版本是 `preview`。这一选择保存在 `ProjectSettings/xpTURN.Polyfill.Settings.json` 中；像 0.5.0 之前写入的文件那样没有版本时，即为 `preview`。不需要在 asmdef 旁放置 [docs/csc.rsp](./docs/csc.rsp) 这样的 `csc.rsp` 文件。设置页也会显示 Player 设置中的当前值，并在各平台不一致时发出警告。**Edit > Polyfill > Regenerate Project Files** 可以随时重写 `.csproj` 文件。
+
+菜单命令 **Edit > Polyfill > Player Settings > Apply Additional Compiler Arguments -langversion (All Installed Platforms)** 会应用已保存的版本。要撤销，关闭该选项后按 **Apply**，或运行 **Edit > Polyfill > Player Settings > Remove Additional Compiler Arguments -langversion (All Installed Platforms)**。
 
 ### `preview` 接受哪些语法
 
@@ -219,9 +226,13 @@ https://github.com/xpTURN/Polyfill.git?path=src/Polyfill/Assets/Polyfill#v0.4.1
 陷阱：
 
 - 这个参数会作用于项目中的所有程序集，包括 `Library/PackageCache` 中的第三方包和 Unity 包。
+- 由多个编辑器打开的项目，需要选择所有编辑器都接受的版本：`10.0` 或 `preview`。Unity 6000.5 之前的编辑器会拒绝 `11.0` 和 `12.0`（CS1617），什么也不编译。
+- 用自己的 `csc.rsp` 指定语言版本的程序集会以该版本构建，但它的 `.csproj` 显示的是这里选择的版本。
 - 泛型特性（`[MyAttribute<int>]`）在 Roslyn 4.3 上能编译，但会让 Unity 2022.3 和 6000.3 的 IL2CPP 构建以 `InvalidCastException` 失败，而且错误不会指出是哪个特性。Unity 6000.6 可以构建。
 - `ref` 字段在 Roslyn 4.3 上可以无错误地编译，但运行时并不支持。Roslyn 4.10 会报告 CS9064。
 - static abstract 接口成员（CS8919）和加在方法上的 `[AsyncMethodBuilder]`（CS0592）在三个编辑器中都无法编译。
+
+如果 Unity 6000.5 之前的编辑器打开一个 Player 设置中含有 `-langversion:11.0` 或 `-langversion:12.0` 的项目，包括本包在内的所有程序集都会以 `CS1617: Invalid option '12.0' for /langversion` 失败，本包也无能为力。请在 `ProjectSettings/ProjectSettings.asset` 中，把 `additionalCompilerArguments` 下的每一行 `- -langversion:12.0` 改为 `- -langversion:10.0` 或 `- -langversion:preview`，并把 `ProjectSettings/xpTURN.Polyfill.Settings.json` 的 `langVersion` 改成相同的值。值进来时已经打开的编辑器会输出指向设置页的 `[Polyfill]` 错误。
 
 ### 使用 Assembly Definition
 
